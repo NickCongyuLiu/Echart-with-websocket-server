@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>数据可视化</title>
+</head>
+<body>
+    <div id="chartmain" style="width:600px; height: 400px;"></div>
+    <div id="contents" style="height:500px;overflow:auto;"></div>
+    <!-- <div>
+        <textarea id="msg"></textarea>
+        <a href="javascript:;" onclick="sendMsg()">发送</a>
+    </div> -->
+    <script src="echarts.js"></script>
+    <script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery/jquery-1.4.min.js"></script>
+    <script type="text/javascript">
+        (function(){
+            myChart = echarts.init(document.getElementById('chartmain'));
+            var option = {
+                tooltip: {
+                    show: true
+                },
+                animation: false,
+                legend: {
+                    data: ['数据可视化测试']
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        data:["Android","IOS","PC","Other"]
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value'
+                    }
+                ],
+                series: [
+                    {
+                        "name": "数据可视化测试",
+                        "type": "line",
+                        "data": [5, 20, 40, 10]
+                    }
+                ]
+            };
+            myChart.setOption(option);
+
+        }())
+
+
+        var ws = new WebSocket("ws://127.0.0.1:5000/chat");
+
+
+        //ws state monitor
+        switch (ws.readyState) {
+            case WebSocket.CONNECTING:
+                // do something
+                console.log("connecting");
+                break;
+            case WebSocket.OPEN:
+                // do something
+                console.log("ws opened");
+                break;
+            case WebSocket.CLOSING:
+                // do something
+                console.log("ws closing");
+                break;
+            case WebSocket.CLOSED:
+                console.log("ws closed");
+                // do something
+                break;
+            default:
+                // this never happens
+                break;
+        }
+
+
+
+        ws.onmessage = function(e) {
+            console.log(e.data);
+            var socket_data = e.data.replace(/\n/g,"").split(" ");
+            // sendToServer(socket_data);
+            console.log(socket_data);
+            refreshData(socket_data);
+            $("#contents").append("<p>" + e.data + "</p>");
+        }
+
+        function refreshData(socket_data){
+            if(!myChart){
+                return;
+            }
+            var option = myChart.getOption();
+            option.series[0].data = socket_data;
+            myChart.setOption(option);
+    
+        }
+        
+        function sendToServer(messageToServer){
+
+            ws.send(messageToServer);
+
+
+        }
+        function sendMsg() {
+            var msg = $("#msg").val();
+            ws.send(msg);
+            $("#msg").val("");
+        }
+    </script>
+</body>
+</html>
