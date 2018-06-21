@@ -34,7 +34,7 @@ pip install tornado
 #### 运行
 
 ```shell
-usage: python3 tornado server.py
+usage: python3 main_server.py
 
 ```
 双击打开main_server.html,点击连接 即可以看见实时更新的折线图.
