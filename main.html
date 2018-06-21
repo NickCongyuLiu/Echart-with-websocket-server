@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8" />
+
+<title>Minieye 数据</title>
+
+<script src="echarts.js"></script>
+<script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery/jquery-1.4.min.js"></script>
+<script language="javascript" type="text/javascript">
+
+  function init()
+  {
+	document.myform.url.value = "ws://127.0.0.1:9999/chat"
+	document.myform.inputtext.value = "Hello World!"
+    document.myform.disconnectButton.disabled = true;
+    
+    myChart = echarts.init(document.getElementById('chartmain'));
+                var option = {
+                    backgroundColor:'white',
+                    title:{
+                        text:'Minieye数据可视化',
+                        subtext:"数据来源：深圳佑驾-Minieye"
+                    },
+                    toolbox:{
+                        show:true,
+                        feature:{
+                            saveAsImage:{
+                                show:true,
+                                title:'另存为图片',
+                                type:'jpeg',
+                                name:'test'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        trigger:'axis',
+                        show: true,
+                    },
+                    animation: false,
+                    grid:{
+                        left:'3%',
+                        right:'4%',
+                        bottom:'3%',
+                        containLabel:true
+                    },
+                    legend: {
+                        data: ['汇通速度值','心跳值']
+                    },
+                    xAxis: [
+                        {   
+                            type: 'category',
+                            boundaryGap: false,
+                            data:["Android","IOS","PC","Other"]
+                            
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value'
+                        }
+                    ],
+                    series: [
+                        {   
+                            "name": "汇通速度值",
+                            "type": "line",
+                            "data": [10, 20, 40, 10],
+                            symbolSize:1,   //拐点圆的大小
+                            itemStyle:{
+                                normal:{
+                                    color:'lightgreen'
+                                }
+                            },
+                            lineStyle:{
+                                normal:{
+                                    color:'lightgreen'
+                                }
+                            },
+                            // areaStyle:{
+                            //     normal:{
+                            //         color:'green'
+                            //     }
+                            // },
+                            // markPoint:{
+                            //     data:[
+                            //         {type:'max',name:'max'}
+                            //     ]
+                            // }
+                        },
+                        {
+                            "name": "心跳值",
+                            "type": "line",
+                            "data": [1, 2, 3, 4],
+                            symbolSize:10,   //拐点圆的大小
+                            itemStyle:{ 
+                                normal:{
+                                    color:'darkred'
+                                }
+                            },
+                            lineStyle:{
+                                normal:{
+                                    color:'darkred'
+                                }
+                            },
+                            // areaStyle:{
+                            //     normal:{
+                            //         color:'darkred'
+                            //     }
+                            // },
+                            // markPoint:{
+                            //     data:[
+                            //         {type:'max',name:'sim_not_inserted最大值'},
+                            //         {type:'min',name:'sim_not_inserted最小值'}
+                            //     ]
+                            // }
+                        }
+                    ]
+                };
+    myChart.setOption(option);
+  }
+  function doConnect()
+  {
+    websocket = new WebSocket(document.myform.url.value);
+    websocket.onopen = function(evt) { onOpen(evt) };
+    websocket.onclose = function(evt) { onClose(evt) };
+    websocket.onmessage = function(evt) { onMessage(evt) };
+    websocket.onerror = function(evt) { onError(evt) };
+  }
+  function onOpen(evt)
+  {
+    writeToScreen("connected\n");
+	document.myform.connectButton.disabled = true;
+	document.myform.disconnectButton.disabled = false;
+  }
+  function onClose(evt)
+  {
+    writeToScreen("disconnected\n");
+	document.myform.connectButton.disabled = false;
+	document.myform.disconnectButton.disabled = true;
+  }
+  function onMessage(evt)
+  { 
+    if(evt.data!="work")
+    {
+        var socket_data = evt.data.replace(/\n/g,"").split(" ");
+        // console.log(socket_data);
+        refreshData(socket_data);
+    }
+    websocket.send("123");
+    
+  }
+  function refreshData(socket_data)
+  {
+      if(!myChart)
+      {
+          return;
+      }
+      var name = socket_data[socket_data.length-1].substring(0,7);
+      //数组最后两位为名称和空,所以pop掉
+      socket_data.pop();
+      socket_data.pop();
+
+      //用四个数组分别获取心跳包时间和速度  以及 汇通包时间和速度
+      var socket_data_time = new Array();
+      var socket_data_speed = new Array();
+      var socket_data_time_hb = new Array();
+      var socket_data_speed_hb = new Array();
+      var index = 0,index_hb=0;
+      var spdex = 0,spdex_hb=0;
+
+      for(var i =0;i<socket_data.length;i++){
+          if(i%2==0){
+              if(socket_data[i]>0||(socket_data[i]==0&&1/socket_data[i]>0)){
+                  socket_data_speed[index++]=socket_data[i];
+              }else{
+                  socket_data_speed_hb[index_hb++]=-socket_data[i];
+              }
+          }else{
+              if(socket_data[i]>0){
+                  socket_data_time[spdex++] = socket_data[i];
+              }else{
+                  socket_data_time_hb[spdex_hb++]=-socket_data[i];
+              }
+          }
+      }
+
+      var option = myChart.getOption();
+      
+      //遍历数组，合并两个排序好的时间包，每次时间包的swap，相对应的speed要被储存
+      //echart规则空数据用‘-’表示
+      var m =0,n=0;
+      var f =new Array();
+      var speed=[],heartBeat=[];
+      for(var i =0;i<socket_data_time.length+socket_data_time_hb.length;i++){
+          if(m==socket_data_time.length){
+              f[i]=socket_data_time_hb[n];
+              speed.push("-");
+              heartBeat.push(socket_data_speed_hb[n++]);
+          }else if(n==socket_data_time_hb.length){
+              f[i]=socket_data_time[m];
+              heartBeat.push("-");
+              speed.push(socket_data_speed[m++]);
+          }else{
+              if(socket_data_time[m]<socket_data_time_hb[n]){
+                //汇通包的密度远远大于心跳包，相关数据清洗可以在这里操作 to do  
+                //   if((m%parseInt((socket_data_speed.length/socket_data_speed_hb.length)/2))!=1){
+                //       m++;
+                //       i--;
+                //       continue;
+                //   }
+                  f[i]=socket_data_time[m];
+                  heartBeat.push("-");
+                  speed.push(socket_data_speed[m++]);
+              }else{
+                  f[i]=socket_data_time_hb[n];
+                  speed.push("-");
+                  heartBeat.push(socket_data_speed_hb[n++]);
+              }
+          }
+      }
+      console.log(speed);
+      console.log(heartBeat);
+    
+      var time = new Array();
+    
+      //时间戳转换位时分
+      for(var i =0;i<f.length;i++){
+          var date = new Date(Number(f[i]));
+          var h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
+          var m = (date.getMinutes() <10 ? '0' + date.getMinutes() : date.getMinutes());
+          time.push(h+m);
+      }
+
+      //设置横坐标纵坐标下载文件名称
+      option.xAxis[0].data = time;
+      option.series[0].data = speed;
+      option.series[1].data = heartBeat;
+      option.toolbox[0].feature.saveAsImage.name=name;
+      option.title[0].subtext=name+" ";
+      
+   
+      myChart.setOption(option);
+      
+      //设置自动下载
+      var canvas = document.getElementsByTagName('canvas')[0];
+      var a = document.createElement("a");
+      a.href = canvas.toDataURL();
+      a.download=name;
+    //   a.click();
+
+  }
+  
+  function onError(evt)
+  {
+    writeToScreen('error: ' + evt.data + '\n');
+	websocket.close();
+	document.myform.connectButton.disabled = false;
+	document.myform.disconnectButton.disabled = true;
+  }
+  function doSend(message)
+  {
+    writeToScreen("sent: " + message + '\n'); 
+    websocket.send(message);
+  }
+  function writeToScreen(message)
+  {
+    document.myform.outputtext.value += message
+	document.myform.outputtext.scrollTop = document.myform.outputtext.scrollHeight;
+  }
+  window.addEventListener("load", init, false);
+   function sendText() {
+		doSend( document.myform.inputtext.value );
+   }
+  function clearText() {
+		document.myform.outputtext.value = "";
+   }
+   function doDisconnect() {
+		websocket.close();
+   }
+</script>
+<div id="chartmain" style="width:3000px; height: 800px;"></div>
+<!-- <p id='chartName'>123</p>
+<p id='chartErrorPercentage'>5444</p> -->
+<div id="output"></div>
+
+<form name="myform">
+<p>
+<textarea name="outputtext" rows="20" cols="50"></textarea>
+</p>
+<p>
+<textarea name="inputtext" cols="50"></textarea>
+</p>
+<p>
+<textarea name="url" cols="50"></textarea>
+</p>
+<p>
+<!-- <input type="button" name=sendButton value="Send" onClick="sendText();"> -->
+<input type="button" name=clearButton value="Clear" onClick="clearText();">
+<input type="button" name=disconnectButton value="Disconnect" onClick="doDisconnect();">
+<input type="button" name=connectButton value="Connect" onClick="doConnect();">
+</p>
+
+
+</form>
+</html> 
