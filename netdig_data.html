@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8" />
+
+<title>Minieye 数据</title>
+
+<script src="echarts.js"></script>
+<script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery/jquery-1.4.min.js"></script>
+<script language="javascript" type="text/javascript">
+
+  function init()
+  {
+	document.myform.url.value = "ws://127.0.0.1:9000/chat"
+	document.myform.inputtext.value = "Hello World!"
+    document.myform.disconnectButton.disabled = true;
+    
+    myChart = echarts.init(document.getElementById('chartmain'));
+                var option = {
+                    backgroundColor:'white',
+                    title:{
+                        text:'Minieye数据可视化',
+                        subtext:"数据来源：深圳佑驾-Minieye"
+                    },
+                    toolbox:{
+                        show:true,
+                        feature:{
+                            saveAsImage:{
+                                show:true,
+                                title:'另存为图片',
+                                type:'jpeg',
+                                name:'test'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        trigger:'axis',
+                        show: true,
+                        // backgroundColor:'rgba(32,174,252,0.7)', //提示框的背景颜色
+                    },
+                    animation: false,
+                    grid:{
+                        left:'3%',
+                        right:'4%',
+                        bottom:'3%',
+                        containLabel:true
+                    },
+                    legend: {
+                        data: ['正常值','network_error']
+                    },
+                    xAxis: [
+                        {   
+                            type: 'category',
+                            boundaryGap: false,
+                            data:["Android","IOS","PC","Other"]
+                            
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value'
+                        }
+                    ],
+                    series: [
+                        {   
+                            "name": "正常值",
+                            "type": "line",
+                            "data": [10, 20, 40, 10],
+                            symbolSize:4,   //拐点圆的大小
+                            itemStyle:{
+                                normal:{
+                                    color:'green'
+                                }
+                            },
+                            lineStyle:{
+                                normal:{
+                                    color:'green'
+                                }
+                            },
+                            areaStyle:{
+                                normal:{
+                                    color:'green'
+                                }
+                            },
+                            markPoint:{
+                                data:[
+                                    {type:'max',name:'max'},
+                                    {type:'min',name:'min'}
+                                ]
+                            }
+                        },
+                        {
+                            "name": "network_error",
+                            "type": "line",
+                            "data": [1, 2, 3, 4],
+                            symbolSize:4,   //拐点圆的大小
+                            itemStyle:{ 
+                                normal:{
+                                    color:'darkred'
+                                }
+                            },
+                            lineStyle:{
+                                normal:{
+                                    color:'green'
+                                }
+                            },
+                            areaStyle:{
+                                normal:{
+                                    color:'darkred'
+                                }
+                            },
+                            // markPoint:{
+                            //     data:[
+                            //         {type:'max',name:'sim_not_inserted最大值'},
+                            //         {type:'min',name:'sim_not_inserted最小值'}
+                            //     ]
+                            // }
+                        }
+                    ]
+                };
+    myChart.setOption(option);
+  }
+  function doConnect()
+  {
+    websocket = new WebSocket(document.myform.url.value);
+    websocket.onopen = function(evt) { onOpen(evt) };
+    websocket.onclose = function(evt) { onClose(evt) };
+    websocket.onmessage = function(evt) { onMessage(evt) };
+    websocket.onerror = function(evt) { onError(evt) };
+  }
+  function onOpen(evt)
+  {
+    writeToScreen("connected\n");
+	document.myform.connectButton.disabled = true;
+	document.myform.disconnectButton.disabled = false;
+  }
+  function onClose(evt)
+  {
+    writeToScreen("disconnected\n");
+	document.myform.connectButton.disabled = false;
+	document.myform.disconnectButton.disabled = true;
+  }
+  function onMessage(evt)
+  { 
+    if(evt.data!="work"){
+        var socket_data = evt.data.replace(/\n/g,"").split(" ");
+        // console.log(socket_data);
+        refreshData(socket_data);
+    }
+    websocket.send("123");
+    // writeToScreen("response: " + evt.data + '\n');
+    
+  }
+  function refreshData(socket_data){
+      if(!myChart){
+          return;
+      }
+      //数组最后一位存放数据名称，用name获取，处理to do
+      var name = socket_data[socket_data.length-1];
+      name = name.substr(41,7);
+      //数组最后两位为名称和空,所以pop掉
+      socket_data.pop();
+      socket_data.pop();
+      var option = myChart.getOption();
+      var error_rate = socket_data.length;
+      //存放正常值
+      var socket_data_pos = [];
+      //存放network_erro值
+      var socket_data_neg = [];
+      socket_data.forEach(element => {
+          if(element<0){
+              socket_data_pos.push("-");
+              socket_data_neg.push(parseInt(-element));
+          }else{
+              error_rate--;
+              socket_data_neg.push("-");
+              socket_data_pos.push(element);
+          }
+      });
+      error_rate ="error perentage: "+((100*(error_rate/socket_data.length)).toFixed(2));
+      option.series[0].data = socket_data_pos;
+      option.series[1].data = socket_data_neg;      
+      //为了不让有空置的点，将每次置换的点和前一个线段的点链接起来
+      //优点 更美观 缺点：最大值最小值显示错误
+      for(var i =1;i<socket_data_pos.length;i++){
+          if(socket_data_pos[i]!='-'&&socket_data_pos[i-1]=='-'){
+              socket_data_pos[i-1]=socket_data_neg[i-1];
+          }else if(socket_data_neg[i]!='-'&&socket_data_neg[i-1]=='-'){
+              socket_data_neg[i-1] = socket_data_pos[i-1];
+          }
+      }
+      var f =[];
+      for(var i =0;i<socket_data.length;i++){
+          f.push(i);
+      }
+      option.xAxis[0].data = f;
+      option.toolbox[0].feature.saveAsImage.name=name;
+      option.title[0].subtext=name+" "+error_rate+ " %";
+      
+    //   console.log(name);
+    //   console.log(error_rate +' %' );
+      writeToScreen(name+'\n');
+      writeToScreen(error_rate+' %'+ '\n');
+      myChart.setOption(option);
+      
+      var canvas = document.getElementsByTagName('canvas')[0];
+      var a = document.createElement("a");
+      a.href = canvas.toDataURL();
+      a.download=name;
+      a.click();
+
+  }
+  
+  function onError(evt)
+  {
+    writeToScreen('error: ' + evt.data + '\n');
+	websocket.close();
+	document.myform.connectButton.disabled = false;
+	document.myform.disconnectButton.disabled = true;
+  }
+  function doSend(message)
+  {
+    writeToScreen("sent: " + message + '\n'); 
+    websocket.send(message);
+  }
+  function writeToScreen(message)
+  {
+    document.myform.outputtext.value += message
+	document.myform.outputtext.scrollTop = document.myform.outputtext.scrollHeight;
+  }
+  window.addEventListener("load", init, false);
+   function sendText() {
+		doSend( document.myform.inputtext.value );
+   }
+  function clearText() {
+		document.myform.outputtext.value = "";
+   }
+   function doDisconnect() {
+		websocket.close();
+   }
+</script>
+<div id="chartmain" style="width:1500px; height: 800px;"></div>
+<!-- <p id='chartName'>123</p>
+<p id='chartErrorPercentage'>5444</p> -->
+<div id="output"></div>
+
+<form name="myform">
+<p>
+<textarea name="outputtext" rows="20" cols="50"></textarea>
+</p>
+<p>
+<textarea name="inputtext" cols="50"></textarea>
+</p>
+<p>
+<textarea name="url" cols="50"></textarea>
+</p>
+<p>
+<input type="button" name=sendButton value="Send" onClick="sendText();">
+<input type="button" name=clearButton value="Clear" onClick="clearText();">
+<input type="button" name=disconnectButton value="Disconnect" onClick="doDisconnect();">
+<input type="button" name=connectButton value="Connect" onClick="doConnect();">
+</p>
+
+
+</form>
+</html> 
