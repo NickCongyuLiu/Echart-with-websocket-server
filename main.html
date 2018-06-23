@@ -7,7 +7,9 @@
 <script src="echarts.js"></script>
 <script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery/jquery-1.4.min.js"></script>
 <script language="javascript" type="text/javascript">
-
+  SIGNALONE='ask for fold ';
+  SIGNALTWO='ask for json ';
+  SIGNALTHR='ask for auto ';  
   function init()
   {
 	// document.myform.url.value = "ws://127.0.0.1:9999/chat"
@@ -185,11 +187,10 @@
         refreshData(socket_data);
     }else{
         refreshData(socket_data);
-        websocket.send("ask for auto ");
+        websocket.send(SIGNALTHR);
     }
     // websocket.send("123"); 
   }
-
   function fileDisplay(socket_data){
     
     for(var i=0;i<socket_data.length;i++){
@@ -199,20 +200,20 @@
         but.appendChild(node);
         var element = document.getElementById("jsonFile");
         element.appendChild(but);
-
         but.addEventListener("click",function(){
+            SIGNALTHR='STOP AUTO';
             $('#jsonFile').children("button").attr("disabled",false);
+            $('#auto').children('button').attr("disabled",false);
             $(this).attr("disabled",true);
-            websocket.send('ask for json '+but.innerHTML);
+            websocket.send(SIGNALTWO+but.innerHTML);
         })
     }
-
   }
   function folderDisplay(socket_data){
-    $('fileName').empty();  
-
+    $('#fileName').empty();
+    $('#auto').empty();
+    $('#jsonFile').empty();  
     for(var i =0;i< socket_data.length;i++){
-
         let but = document.createElement("button");
         
         var node = document.createTextNode(socket_data[i]);
@@ -220,14 +221,14 @@
         var element=document.getElementById("fileName");
         element.appendChild(but);
         let auto = document.createElement("button");
-
         but.addEventListener("click",function(){
             $('#fileName').children("button").attr("disabled",false);
+            // $('#auto').children("button").attr("disabled",false);
             $('#jsonFile').empty();
             $('#auto').empty();
             $("hr").remove();
             $(this).attr("disabled",true);
-            websocket.send('ask for fold '+but.innerHTML);
+            websocket.send(SIGNALONE+but.innerHTML);
             var autoElement = document.getElementById("auto");
             autoElement.appendChild(auto);
             $("#auto").children("button").text("自动播放");
@@ -241,16 +242,16 @@
         })
         
         auto.addEventListener("click",function(){
-            $('#fileName').children("button").attr("disabled",false);
-            $('#jsonFile').empty();
-            $("#auto").children("hr").remove();
-            $(this).attr("disabled",true);
-            websocket.send('ask for auto'+but.innerHTML);
+            SIGNALTHR='ask for auto ';
+            $('#jsonFile').children("button").attr("disabled",false);
+            // $('#fileName').children("button").attr("disabled",false);
+            // $('#jsonFile').empty();
+            // $("#auto").children("hr").remove();
+            $(this).attr("disabled",true);  
+            websocket.send(SIGNALTHR+but.innerHTML);
         })
-
     }
   }
-
   function refreshData(socket_data)
   {     
       if(!myChart)
@@ -260,7 +261,6 @@
       var name = socket_data[socket_data.length-1].substring(0,7);
       //数组最后两位为名称和空,所以pop掉
       socket_data.pop();
-
       //用四个数组分别获取心跳包时间和速度  以及 汇通包时间和速度
       var socket_data_time = new Array();
       var socket_data_speed = new Array();
@@ -268,7 +268,6 @@
       var socket_data_speed_hb = new Array();
       var index = 0,index_hb=0;
       var spdex = 0,spdex_hb=0;
-
       for(var i =0;i<socket_data.length;i++){
           if(i%2==0){
               if(socket_data[i]>0||(socket_data[i]==0&&1/socket_data[i]>0)){
@@ -284,40 +283,59 @@
               }
           }
       }
-
-      var option = myChart.getOption();
+      
+      var speed_raw=[],hb_raw=[],time_raw=[],hb_time_raw=[];
+      time_raw.push(socket_data_time[0]);
+      speed_raw.push(socket_data_speed[0]);
+      hb_time_raw.push(socket_data_time_hb[0]);
+      hb_raw.push(socket_data_speed_hb[0]);
+      for(var i = 1;i<socket_data_time.length;i++){
+          var dateOne = new Date(Number(socket_data_time[i-1]));
+          var dateTwo = new Date(Number(socket_data_time[i]));
+          if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+              time_raw.push(socket_data_time[i]);
+              speed_raw.push(socket_data_speed[i]);
+          }
+      }
+      for(var i = 1;i<socket_data_time_hb.length;i++){
+          var dateOne = new Date(Number(socket_data_time_hb[i-1]));
+          var dateTwo = new Date(Number(socket_data_time_hb[i]));
+          if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+              hb_time_raw.push(socket_data_time_hb[i]);
+              hb_raw.push(socket_data_speed_hb[i]);
+          }
+      }     
       
       //遍历数组，合并两个排序好的时间包，每次时间包的swap，相对应的speed要被储存
       //echart规则空数据用‘-’表示
       var m =0,n=0;
       var f =new Array();
       var speed=[],heartBeat=[];
-
     /*合并心跳包和汇通包的横坐标*/
-      for(var i =0;i<socket_data_time.length+socket_data_time_hb.length;i++){
-          if(m==socket_data_time.length){
-              f[i]=socket_data_time_hb[n];
+      for(var i =0;i<time_raw.length+hb_time_raw.length;i++){
+          if(m==time_raw.length){
+              f[i]=hb_time_raw[n];
               speed.push("-");
-              heartBeat.push(socket_data_speed_hb[n++]);
-          }else if(n==socket_data_time_hb.length){
-              f[i]=socket_data_time[m];
+              heartBeat.push(hb_raw[n++]);
+          }else if(n==hb_time_raw.length){
+              f[i]=time_raw[m];
               heartBeat.push("-");
-              speed.push(socket_data_speed[m++]);
+              speed.push(speed_raw[m++]);
           }else{
-              if(socket_data_time[m]<socket_data_time_hb[n]){
+              if(time_raw[m]<hb_time_raw[n]){
                 //汇通包的密度远远大于心跳包，相关数据清洗可以在这里操作 to do  
                 //   if((m%parseInt((socket_data_speed.length/socket_data_speed_hb.length)/2))!=1){
                 //       m++;
                 //       i--;
                 //       continue;
                 //   }
-                  f[i]=socket_data_time[m];
+                  f[i]=time_raw[m];
                   heartBeat.push("-");
-                  speed.push(socket_data_speed[m++]);
+                  speed.push(speed_raw[m++]);
               }else{
-                  f[i]=socket_data_time_hb[n];
+                  f[i]=hb_time_raw[n];
                   speed.push("-");
-                  heartBeat.push(socket_data_speed_hb[n++]);
+                  heartBeat.push(hb_raw[n++]);
               }
           }
       }
@@ -329,7 +347,6 @@
           }
         }
       }
-
       for(var i=1;i<heartBeat.length-1;i++){
           if(heartBeat[i]=='-'){
               if(heartBeat[i-1]!='-'&&heartBeat[i+1]!='-'){
@@ -337,7 +354,6 @@
               }
           }
       }
-
     /*用汇通包的横坐标作为横坐标 */
       
       /*精确到秒 去重*/
@@ -354,7 +370,6 @@
     //           speed.push(socket_data_speed[i]);
     //       }
     //   }
-
     //   for(var i = 1;i<socket_data_time_hb.length;i++){
     //       var dateOne = new Date(Number(socket_data_time_hb[i-1]));
     //       var dateTwo = new Date(Number(socket_data_time_hb[i]));
@@ -363,16 +378,11 @@
     //           speed_hb.push(socket_data_speed_hb[i]);
     //       }
     //   }
-
     //   console.log(socket_data_speed.length);
     //   console.log(speed.length);
     //   console.log(socket_data_time.length);
     //   console.log(speed_time.length);
-
       
-
-
-
     //   console.log(speed);
     //   console.log(heartBeat);
     
@@ -389,7 +399,7 @@
           var s = (date.getSeconds() <10 ? '0' + date.getSeconds():date.getSeconds());
           time.push(y+mon+d+h+m+s);
       }
-
+      var option = myChart.getOption();
       //设置横坐标纵坐标下载文件名称
       option.xAxis[0].data = time;
       option.series[0].data = speed;
@@ -409,7 +419,6 @@
       a.href = canvas.toDataURL();
       a.download=name;
     //   a.click();
-
   }
   
   function onError(evt)

@@ -76,7 +76,7 @@ class ChatHandler(WebSocketHandler):
 
         #检查自动播放信号 依次发送文件到前端展示        
         if(message[0:12]=='ask for auto'):
-            time.sleep(2)
+            time.sleep(1)
             if(self.file_count<len(self.file_list)):
                 f = open(self.file_list[self.file_count])
                 test = json.load(f)
