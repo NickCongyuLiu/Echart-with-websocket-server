@@ -8,12 +8,16 @@
 <script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery/jquery-1.4.min.js"></script>
 <script language="javascript" type="text/javascript">
 
+  SIGNALONE='ask for fold ';
+  SIGNALTWO='ask for json ';
+  SIGNALTHR='ask for auto ';  
+
   function init()
   {
-	document.myform.url.value = "ws://127.0.0.1:9999/chat"
-	document.myform.inputtext.value = "Hello World!"
-    document.myform.disconnectButton.disabled = true;
-    
+	// document.myform.url.value = "ws://127.0.0.1:9999/chat"
+	// document.myform.inputtext.value = "Hello World!"
+    // document.myform.disconnectButton.disabled = true;
+    document.getElementById('disconnectButton').disabled=true;
     myChart = echarts.init(document.getElementById('chartmain'));
                 var option = {
                     backgroundColor:'white',
@@ -38,9 +42,9 @@
                     },
                     animation: false,
                     grid:{
-                        left:'3%',
-                        right:'4%',
-                        bottom:'3%',
+                        left:'2%',
+                        right:'3%',
+                        bottom:'8%',
                         containLabel:true
                     },
                     legend: {
@@ -59,6 +63,33 @@
                             type: 'value'
                         }
                     ],
+                    dataZoom:[                                      //区域缩放  
+                        {  
+                            id: 'dataZoomX',  
+                            show:true,                              //是否显示 组件。如果设置为 false，不会显示，但是数据过滤的功能还存在。  
+                            backgroundColor:"rgba(47,69,84,0)",  //组件的背景颜色  
+                            type: 'slider',                         //slider表示有滑动块的，inside表示内置的  
+                            fillerColor:"rgba(167,183,204,0.4)",  //选中范围的填充颜色。  
+                            borderColor:"#ddd",                     //边框颜色。  
+                            filterMode: 'filter',                   //'filter'：当前数据窗口外的数据，被 过滤掉。即 会 影响其他轴的数据范围。每个数据项，只要有一个维度在数据窗口外，整个数据项就会被过滤掉。  
+                                                                    //'weakFilter'：当前数据窗口外的数据，被 过滤掉。即 会 影响其他轴的数据范围。每个数据项，只有当全部维度都在数据窗口同侧外部，整个数据项才会被过滤掉。  
+                                                                    //'empty'：当前数据窗口外的数据，被 设置为空。即 不会 影响其他轴的数据范围。  
+                                                                    //'none': 不过滤数据，只改变数轴范围。  
+                            start: 0,                                //数据窗口范围的起始百分比,表示30%  
+                            end: 100,                                  //数据窗口范围的结束百分比,表示70%  
+                            startValue:0,                           //数据窗口范围的起始数值  
+                            endValue:100,                            //数据窗口范围的结束数值。  
+                            orient:"horizontal",                    //布局方式是横还是竖。不仅是布局方式，对于直角坐标系而言，也决定了，缺省情况控制横向数轴还是纵向数轴。'horizontal'：水平。'vertical'：竖直。  
+                            zoomLock:false,                          //是否锁定选择区域（或叫做数据窗口）的大小。如果设置为 true 则锁定选择区域的大小，也就是说，只能平移，不能缩放。  
+                            throttle:100,                             //设置触发视图刷新的频率。单位为毫秒（ms）。  
+                            zoomOnMouseWheel:true,                  //如何触发缩放。可选值为：true：表示不按任何功能键，鼠标滚轮能触发缩放。false：表示鼠标滚轮不能触发缩放。'shift'：表示按住 shift 和鼠标滚轮能触发缩放。'ctrl'：表示按住 ctrl 和鼠标滚轮能触发缩放。'alt'：表示按住 alt 和鼠标滚轮能触发缩放。  
+                            moveOnMouseMove:true,                   //如何触发数据窗口平移。true：表示不按任何功能键，鼠标移动能触发数据窗口平移。false：表示鼠标滚轮不能触发缩放。'shift'：表示按住 shift 和鼠标移动能触发数据窗口平移。'ctrl'：表示按住 ctrl 和鼠标移动能触发数据窗口平移。'alt'：表示按住 alt 和鼠标移动能触发数据窗口平移。  
+                            left:"center",                           //组件离容器左侧的距离,'left', 'center', 'right','20%'  
+                            top:"auto",                               //组件离容器上侧的距离,'top', 'middle', 'bottom','20%'  
+                            right:"auto",                             //组件离容器右侧的距离,'20%'  
+                            bottom:"0",                            //组件离容器下侧的距离,'20%'  
+                        },
+                    ],
                     series: [
                         {   
                             "name": "汇通速度值",
@@ -67,12 +98,12 @@
                             symbolSize:1,   //拐点圆的大小
                             itemStyle:{
                                 normal:{
-                                    color:'lightgreen'
+                                    color:'#575757'
                                 }
                             },
                             lineStyle:{
                                 normal:{
-                                    color:'lightgreen'
+                                    color:'#575757'
                                 }
                             },
                             // areaStyle:{
@@ -93,12 +124,12 @@
                             symbolSize:10,   //拐点圆的大小
                             itemStyle:{ 
                                 normal:{
-                                    color:'darkred'
+                                    color:'green'
                                 }
                             },
                             lineStyle:{
                                 normal:{
-                                    color:'darkred'
+                                    color:'green'
                                 }
                             },
                             // areaStyle:{
@@ -115,11 +146,12 @@
                         }
                     ]
                 };
+    // myChart.showLoading();
     myChart.setOption(option);
   }
   function doConnect()
   {
-    websocket = new WebSocket(document.myform.url.value);
+    websocket = new WebSocket('ws://127.0.0.1:9999/chat');
     websocket.onopen = function(evt) { onOpen(evt) };
     websocket.onclose = function(evt) { onClose(evt) };
     websocket.onmessage = function(evt) { onMessage(evt) };
@@ -128,35 +160,115 @@
   function onOpen(evt)
   {
     writeToScreen("connected\n");
-	document.myform.connectButton.disabled = true;
-	document.myform.disconnectButton.disabled = false;
+	document.getElementById("connectButton").disabled = true;
+	document.getElementById("disconnectButton").disabled = false;
   }
   function onClose(evt)
   {
     writeToScreen("disconnected\n");
-	document.myform.connectButton.disabled = false;
-	document.myform.disconnectButton.disabled = true;
+	document.getElementById("connectButton").disabled = false;
+	document.getElementById("disconnectButton").disabled = true;
   }
   function onMessage(evt)
   { 
-    if(evt.data!="work")
+    // console.log(evt);
+    var socket_data = evt.data.replace(/\n/g,"").split(" ");
+    // console.log(socket_data);
+    //检验信号，首次信息传送文件名
+    if(socket_data[socket_data.length-1]=="fileList")
     {
-        var socket_data = evt.data.replace(/\n/g,"").split(" ");
+        socket_data.pop();
         // console.log(socket_data);
+        folderDisplay(socket_data);
+    }else if(socket_data[socket_data.length-1]=='file'){
+        socket_data.pop();
+        // console.log("here");
+        fileDisplay(socket_data);
+    }else if(socket_data[socket_data.length-1]=='singleDisplay'){
+        socket_data.pop();
         refreshData(socket_data);
+    }else{
+        refreshData(socket_data);
+        websocket.send(SIGNALTHR);
     }
-    websocket.send("123");
-    
+    // websocket.send("123"); 
   }
+
+  function fileDisplay(socket_data){
+    
+    for(var i=0;i<socket_data.length;i++){
+        
+        let but = document.createElement("button");
+        var node =document.createTextNode(socket_data[i]);
+        but.appendChild(node);
+        var element = document.getElementById("jsonFile");
+        element.appendChild(but);
+
+        but.addEventListener("click",function(){
+            SIGNALTHR='STOP AUTO';
+            $('#jsonFile').children("button").attr("disabled",false);
+            $('#auto').children('button').attr("disabled",false);
+            $(this).attr("disabled",true);
+            websocket.send(SIGNALTWO+but.innerHTML);
+        })
+    }
+
+  }
+  function folderDisplay(socket_data){
+    $('#fileName').empty();
+    $('#auto').empty();
+    $('#jsonFile').empty();  
+
+    for(var i =0;i< socket_data.length;i++){
+
+        let but = document.createElement("button");
+        
+        var node = document.createTextNode(socket_data[i]);
+        but.appendChild(node);
+        var element=document.getElementById("fileName");
+        element.appendChild(but);
+        let auto = document.createElement("button");
+
+        but.addEventListener("click",function(){
+            $('#fileName').children("button").attr("disabled",false);
+            // $('#auto').children("button").attr("disabled",false);
+            $('#jsonFile').empty();
+            $('#auto').empty();
+            $("hr").remove();
+            $(this).attr("disabled",true);
+            websocket.send(SIGNALONE+but.innerHTML);
+            var autoElement = document.getElementById("auto");
+            autoElement.appendChild(auto);
+            $("#auto").children("button").text("自动播放");
+            let hrOne = document.createElement("hr");
+            element.appendChild(hrOne);
+            let hrTwo = document.createElement("hr");
+            autoElement.appendChild(hrTwo)
+            $("#auto").children("hr").attr("width","1500");
+            $("hr").attr("align","left");
+            // autoElement.appendChild(hrOne);
+        })
+        
+        auto.addEventListener("click",function(){
+            SIGNALTHR='ask for auto ';
+            // $('#fileName').children("button").attr("disabled",false);
+            // $('#jsonFile').empty();
+            // $("#auto").children("hr").remove();
+            $(this).attr("disabled",true);  
+            websocket.send(SIGNALTHR+but.innerHTML);
+        })
+
+    }
+  }
+
   function refreshData(socket_data)
-  {
+  {     
       if(!myChart)
       {
           return;
       }
       var name = socket_data[socket_data.length-1].substring(0,7);
       //数组最后两位为名称和空,所以pop掉
-      socket_data.pop();
       socket_data.pop();
 
       //用四个数组分别获取心跳包时间和速度  以及 汇通包时间和速度
@@ -182,70 +294,153 @@
               }
           }
       }
+      
+      var speed_raw=[],hb_raw=[],time_raw=[],hb_time_raw=[];
+      time_raw.push(socket_data_time[0]);
+      speed_raw.push(socket_data_speed[0]);
+      hb_time_raw.push(socket_data_time_hb[0]);
+      hb_raw.push(socket_data_speed_hb[0]);
 
-      var option = myChart.getOption();
+      for(var i = 1;i<socket_data_time.length;i++){
+          var dateOne = new Date(Number(socket_data_time[i-1]));
+          var dateTwo = new Date(Number(socket_data_time[i]));
+          if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+              time_raw.push(socket_data_time[i]);
+              speed_raw.push(socket_data_speed[i]);
+          }
+      }
+
+      for(var i = 1;i<socket_data_time_hb.length;i++){
+          var dateOne = new Date(Number(socket_data_time_hb[i-1]));
+          var dateTwo = new Date(Number(socket_data_time_hb[i]));
+          if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+              hb_time_raw.push(socket_data_time_hb[i]);
+              hb_raw.push(socket_data_speed_hb[i]);
+          }
+      }     
       
       //遍历数组，合并两个排序好的时间包，每次时间包的swap，相对应的speed要被储存
       //echart规则空数据用‘-’表示
       var m =0,n=0;
       var f =new Array();
       var speed=[],heartBeat=[];
-      for(var i =0;i<socket_data_time.length+socket_data_time_hb.length;i++){
-          if(m==socket_data_time.length){
-              f[i]=socket_data_time_hb[n];
+
+    /*合并心跳包和汇通包的横坐标*/
+      for(var i =0;i<time_raw.length+hb_time_raw.length;i++){
+          if(m==time_raw.length){
+              f[i]=hb_time_raw[n];
               speed.push("-");
-              heartBeat.push(socket_data_speed_hb[n++]);
-          }else if(n==socket_data_time_hb.length){
-              f[i]=socket_data_time[m];
+              heartBeat.push(hb_raw[n++]);
+          }else if(n==hb_time_raw.length){
+              f[i]=time_raw[m];
               heartBeat.push("-");
-              speed.push(socket_data_speed[m++]);
+              speed.push(speed_raw[m++]);
           }else{
-              if(socket_data_time[m]<socket_data_time_hb[n]){
+              if(time_raw[m]<hb_time_raw[n]){
                 //汇通包的密度远远大于心跳包，相关数据清洗可以在这里操作 to do  
                 //   if((m%parseInt((socket_data_speed.length/socket_data_speed_hb.length)/2))!=1){
                 //       m++;
                 //       i--;
                 //       continue;
                 //   }
-                  f[i]=socket_data_time[m];
+                  f[i]=time_raw[m];
                   heartBeat.push("-");
-                  speed.push(socket_data_speed[m++]);
+                  speed.push(speed_raw[m++]);
               }else{
-                  f[i]=socket_data_time_hb[n];
+                  f[i]=hb_time_raw[n];
                   speed.push("-");
-                  heartBeat.push(socket_data_speed_hb[n++]);
+                  heartBeat.push(hb_raw[n++]);
               }
           }
       }
-      console.log(speed);
-      console.log(heartBeat);
-    
-      var time = new Array();
-    
-      //时间戳转换位时分
-      for(var i =0;i<f.length;i++){
-          var date = new Date(Number(f[i]));
-          var h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
-          var m = (date.getMinutes() <10 ? '0' + date.getMinutes() : date.getMinutes());
-          time.push(h+m);
+      
+      for(var i = 1;i<speed.length-1;i++){
+        if(speed[i]=='-'){  
+          if(speed[i-1]!='-'&&speed[i+1]!='-'){
+              speed[i]=(Number(speed[i-1])+Number(speed[i+1]))/2;
+          }
+        }
       }
 
+      for(var i=1;i<heartBeat.length-1;i++){
+          if(heartBeat[i]=='-'){
+              if(heartBeat[i-1]!='-'&&heartBeat[i+1]!='-'){
+                heartBeat[i]=(Number(heartBeat[i-1])+Number(heartBeat[i+1]))/2;
+              }
+          }
+      }
+
+    /*用汇通包的横坐标作为横坐标 */
+      
+      /*精确到秒 去重*/
+    //   var speed = [],speed_hb=[],speed_time=[],time_hb=[];
+    //   speed_time.push(socket_data_time[0]);
+    //   speed.push(socket_data_speed[0]);
+    //   time_hb.push(socket_data_time_hb[0]);
+    //   speed_hb.push(socket_data_speed_hb[0]);
+    //   for(var i = 1;i<socket_data_time.length;i++){
+    //       var dateOne = new Date(Number(socket_data_time[i-1]));
+    //       var dateTwo = new Date(Number(socket_data_time[i]));
+    //       if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+    //           speed_time.push(socket_data_time[i]);
+    //           speed.push(socket_data_speed[i]);
+    //       }
+    //   }
+
+    //   for(var i = 1;i<socket_data_time_hb.length;i++){
+    //       var dateOne = new Date(Number(socket_data_time_hb[i-1]));
+    //       var dateTwo = new Date(Number(socket_data_time_hb[i]));
+    //       if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+    //           time_hb.push(socket_data_time_hb[i]);
+    //           speed_hb.push(socket_data_speed_hb[i]);
+    //       }
+    //   }
+
+    //   console.log(socket_data_speed.length);
+    //   console.log(speed.length);
+    //   console.log(socket_data_time.length);
+    //   console.log(speed_time.length);
+
+      
+
+
+
+    //   console.log(speed);
+    //   console.log(heartBeat);
+    
+      var time = [];
+    
+    //   时间戳转换位时分
+      for(var i =0;i<f.length;i++){
+          var date = new Date(Number(f[i]));
+          var y = (date.getFullYear() + '-');
+          var mon = (date.getMonth() + '-');
+          var d = (date.getDate() + ' ');
+          var h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
+          var m = (date.getMinutes() <10 ? '0' + date.getMinutes() : date.getMinutes()+ ':');
+          var s = (date.getSeconds() <10 ? '0' + date.getSeconds():date.getSeconds());
+          time.push(y+mon+d+h+m+s);
+      }
+      var option = myChart.getOption();
       //设置横坐标纵坐标下载文件名称
       option.xAxis[0].data = time;
       option.series[0].data = speed;
       option.series[1].data = heartBeat;
       option.toolbox[0].feature.saveAsImage.name=name;
       option.title[0].subtext=name+" ";
+      option.dataZoom[0].start = 0;
+      option.dataZoom[0].end=100;
       
    
       myChart.setOption(option);
+    //   myChart.hideLoading();
       
       //设置自动下载
       var canvas = document.getElementsByTagName('canvas')[0];
       var a = document.createElement("a");
       a.href = canvas.toDataURL();
       a.download=name;
-      a.click();
+    //   a.click();
 
   }
   
@@ -253,8 +448,8 @@
   {
     writeToScreen('error: ' + evt.data + '\n');
 	websocket.close();
-	document.myform.connectButton.disabled = false;
-	document.myform.disconnectButton.disabled = true;
+	$('#connectButton').disabled = false;
+	$('#disconnectButton').disabled = true;
   }
   function doSend(message)
   {
@@ -263,8 +458,8 @@
   }
   function writeToScreen(message)
   {
-    document.myform.outputtext.value += message
-	document.myform.outputtext.scrollTop = document.myform.outputtext.scrollHeight;
+    document.getElementsByName("outputtext").value += message
+	document.getElementsByName("outputtext").scrollTop = document.getElementsByName("outputtext").scrollHeight;
   }
   window.addEventListener("load", init, false);
    function sendText() {
@@ -277,28 +472,92 @@
 		websocket.close();
    }
 </script>
-<div id="chartmain" style="width:3000px; height: 800px;"></div>
-<!-- <p id='chartName'>123</p>
-<p id='chartErrorPercentage'>5444</p> -->
+<div id="chartmain" style="width:10000px; height: 400px;"></div>
 <div id="output"></div>
 
-<form name="myform">
-<p>
-<textarea name="outputtext" rows="20" cols="50"></textarea>
-</p>
-<p>
-<textarea name="inputtext" cols="50"></textarea>
-</p>
-<p>
-<textarea name="url" cols="50"></textarea>
-</p>
-<p>
-<!-- <input type="button" name=sendButton value="Send" onClick="sendText();"> -->
-<input type="button" name=clearButton value="Clear" onClick="clearText();">
-<input type="button" name=disconnectButton value="Disconnect" onClick="doDisconnect();">
-<input type="button" name=connectButton value="Connect" onClick="doConnect();">
-</p>
+<div name="myform" style="width:100%;height:200px;">
+
+    <div id='fileName' style="line-height:30px; width:1500px;margin-top:20px"></div>
+    <!-- <hr align='left' width=0px;> -->
+    <div id ='auto' styole="line-height:30px;width:1500px;margin-top:20px"></div>
+    <!-- <hr align='left' width=0px;> -->
+    <div id='jsonFile' style="line-height:30px; width:1500px;margin-top:20px;"></div>
 
 
-</form>
+    <p>
+        <textarea name="outputtext" rows="20" cols="50" style="width:1500px;height:200px"></textarea>
+    </p>
+    
+    <p>
+        <input id="clearButton" type="button" name=clearButton value="Clear" onClick="clearText();">
+        <input id="disconnectButton" type="button" name=disconnectButton value="Disconnect" onClick="doDisconnect();">
+        <input id="connectButton" type="button" name=connectButton value="Connect" onClick="doConnect();">
+    </p>
+
+</div>
+<style>
+    button{
+        /* margin:10px 0 0 10px; */
+        /* width:100px; */
+        box-shadow: none;
+        outline: none;
+        width:150px;
+        text-align:center;
+        line-height:100%;
+        padding-top:0.5em;
+        padding-right:2em;
+        padding-bottom:0.55em;
+        padding-left:2em;
+        font-family:Arial,sans-serif;
+        font-size:14px;
+        font-style:normal;
+        font-variant:normal;
+        font-weight:normal;
+        text-decoration:none;
+        margin-top:0px;
+        margin-right:2px;
+        margin-bottom:0px;
+        margin-left:2px;
+        vertical-align:text-bottom;
+        display:inline-block;
+        cursor:pointer;
+        zoom:1;
+        outline-width:medium;
+        outline-color:invert;
+        font-size-adjust:none;
+        font-stretch:normal;
+        border-top-left-radius:0.5em;
+        border-top-right-radius:0.5em;
+        border-bottom-left-radius:0.5em;
+        border-bottom-right-radius:0.5em;
+        box-shadow:0px 1px 2px rgba(0,0,0,0.2);
+        text-shadow:0px 1px 1px rgba(0,0,0,0.3);
+        /* color:#fefee9; */
+        border-top-color:#da7c0c;
+        border-right-color:#da7c0c;
+        border-bottom-color:#da7c0c;
+        border-left-color:#da7c0c;
+        border-top-width:1px;
+        border-right-width:1px;
+        border-bottom-width:1px;
+        border-left-width:1px;
+        border-top-style:solid;
+        border-right-style:solid;
+        border-bottom-style:solid;
+        border-left-style:solid;
+        background-image:none;
+        background-attachment:scroll;
+        background-repeat:repeat;
+        background-position-x:0%;
+        background-position-y:0%;
+        background-size:auto;
+        background-origin:padding-box;
+        background-clip:padding-box;
+        background-color:none;
+    }
+    button:nth-of-type(n+1):hover{
+        background-color:#f47c20
+    }
+    
+</style>
 </html> 
