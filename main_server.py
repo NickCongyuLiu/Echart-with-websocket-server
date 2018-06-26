@@ -52,7 +52,6 @@ class ChatHandler(WebSocketHandler):
     #websocket接受信息
     def on_message(self, message):
 
-        print(message)
 
         ##展示文件
         if(message[0:12]=='ask for fold'):
