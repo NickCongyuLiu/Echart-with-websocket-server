@@ -9,7 +9,9 @@
 <script language="javascript" type="text/javascript">
   SIGNALONE='ask for fold ';
   SIGNALTWO='ask for json ';
-  SIGNALTHR='ask for auto ';  
+  SIGNALTHR='ask for auto ';
+  INTERVAL = setInterval('',1000);
+
   function init()
   {
 	// document.myform.url.value = "ws://127.0.0.1:9999/chat"
@@ -23,6 +25,13 @@
                         text:'Minieye数据可视化',
                         subtext:"数据来源：深圳佑驾-Minieye"
                     },
+                    visualMap:[{
+                        show:false,
+                        type:'continuous',
+                        seriesIndex:0,
+                        min:0,
+                        max:400
+                    }],
                     toolbox:{
                         show:true,
                         feature:{
@@ -41,6 +50,7 @@
                     animation: false,
                     grid:{
                         left:'2%',
+                        top:'20%',
                         right:'3%',
                         bottom:'8%',
                         containLabel:true
@@ -58,7 +68,9 @@
                     ],
                     yAxis: [
                         {
-                            type: 'value'
+                            type: 'value',
+                            name: '速度(km/h)',
+                            // max: 200
                         }
                     ],
                     dataZoom:[                                      //区域缩放  
@@ -104,6 +116,7 @@
                                     color:'#575757'
                                 }
                             },
+                            areaStyle:{},
                             // areaStyle:{
                             //     normal:{
                             //         color:'green'
@@ -119,7 +132,7 @@
                             "name": "心跳值",
                             "type": "line",
                             "data": [1, 2, 3, 4],
-                            symbolSize:10,   //拐点圆的大小
+                            symbolSize:1,   //拐点圆的大小
                             itemStyle:{ 
                                 normal:{
                                     color:'green'
@@ -127,9 +140,10 @@
                             },
                             lineStyle:{
                                 normal:{
-                                    color:'green'
+                                    color:'darkred'
                                 }
                             },
+                            // areaStyle:{},
                             // areaStyle:{
                             //     normal:{
                             //         color:'darkred'
@@ -171,7 +185,7 @@
   { 
     // console.log(evt);
     var socket_data = evt.data.replace(/\n/g,"").split(" ");
-    // console.log(socket_data);
+    console.log(socket_data);
     //检验信号，首次信息传送文件名
     if(socket_data[socket_data.length-1]=="fileList")
     {
@@ -201,6 +215,7 @@
         var element = document.getElementById("jsonFile");
         element.appendChild(but);
         but.addEventListener("click",function(){
+            clearInterval(INTERVAL);  
             SIGNALTHR='STOP AUTO';
             $('#jsonFile').children("button").attr("disabled",false);
             $('#auto').children('button').attr("disabled",false);
@@ -242,6 +257,7 @@
         })
         
         auto.addEventListener("click",function(){
+            clearInterval(INTERVAL);  
             SIGNALTHR='ask for auto ';
             $('#jsonFile').children("button").attr("disabled",false);
             // $('#fileName').children("button").attr("disabled",false);
@@ -289,10 +305,11 @@
       speed_raw.push(socket_data_speed[0]);
       hb_time_raw.push(socket_data_time_hb[0]);
       hb_raw.push(socket_data_speed_hb[0]);
+
       for(var i = 1;i<socket_data_time.length;i++){
           var dateOne = new Date(Number(socket_data_time[i-1]));
           var dateTwo = new Date(Number(socket_data_time[i]));
-          if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+          if(dateOne.getMinutes()!=dateTwo.getMinutes()){
               time_raw.push(socket_data_time[i]);
               speed_raw.push(socket_data_speed[i]);
           }
@@ -300,7 +317,7 @@
       for(var i = 1;i<socket_data_time_hb.length;i++){
           var dateOne = new Date(Number(socket_data_time_hb[i-1]));
           var dateTwo = new Date(Number(socket_data_time_hb[i]));
-          if(dateOne.getSeconds()!=dateTwo.getSeconds()){
+          if(dateOne.getMinutes()!=dateTwo.getMinutes()){
               hb_time_raw.push(socket_data_time_hb[i]);
               hb_raw.push(socket_data_speed_hb[i]);
           }
@@ -340,10 +357,13 @@
           }
       }
       
+      /*断点去均值以及用0代替‘-’*/
       for(var i = 1;i<speed.length-1;i++){
         if(speed[i]=='-'){  
           if(speed[i-1]!='-'&&speed[i+1]!='-'){
               speed[i]=(Number(speed[i-1])+Number(speed[i+1]))/2;
+          }else{
+              speed[i]='0';
           }
         }
       }
@@ -351,6 +371,8 @@
           if(heartBeat[i]=='-'){
               if(heartBeat[i-1]!='-'&&heartBeat[i+1]!='-'){
                 heartBeat[i]=(Number(heartBeat[i-1])+Number(heartBeat[i+1]))/2;
+              }else{
+                  heartBeat[i]='0';
               }
           }
       }
@@ -395,7 +417,7 @@
           var mon = (date.getMonth() + '-');
           var d = (date.getDate() + ' ');
           var h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
-          var m = (date.getMinutes() <10 ? '0' + date.getMinutes() : date.getMinutes()+ ':');
+          var m = (date.getMinutes() <10 ? '0' + date.getMinutes() : date.getMinutes())+ ':';
           var s = (date.getSeconds() <10 ? '0' + date.getSeconds():date.getSeconds());
           time.push(y+mon+d+h+m+s);
       }
@@ -406,13 +428,42 @@
       option.series[1].data = heartBeat;
       option.toolbox[0].feature.saveAsImage.name=name;
       option.title[0].subtext=name+" ";
-      option.dataZoom[0].start = 0;
-      option.dataZoom[0].end=100;
+    //   option.dataZoom[0].start = 0;
+    //   option.dataZoom[0].end=100;
       
    
       myChart.setOption(option);
-    //   myChart.hideLoading();
+
       
+      
+    //   myChart.hideLoading();
+      if(SIGNALTHR!='ask for auto '){
+        len = 0;
+        var time_interval =[],speed_interval=[],heartBeat_interval=[];
+        //   time_interval = time.slice(0,len);
+        //   speed_interval = speed.slice(0,len);
+        //   heartBeat_interval = heartBeat.slice(0,len);
+        //   option.xAxis[0].data=time_interval;
+        //   option.series[0].data=speed_interval;  
+        //   option.series[1].data = heartBeat_interval;
+        INTERVAL = setInterval(function() {
+            if(len>=time.length){
+                console.log("nimahai");
+                clearInterval(INTERVAL);  
+                // break; 
+            }
+            time_interval.push(time[len]);
+            speed_interval.push(speed[len]);
+            heartBeat_interval.push(heartBeat[len++]);
+            option.xAxis[0].data=time_interval;
+            option.series[0].data=speed_interval;  
+            option.series[1].data = heartBeat_interval;
+            myChart.setOption(option);      
+        }, 10);
+      }
+      
+      
+
       //设置自动下载
       var canvas = document.getElementsByTagName('canvas')[0];
       var a = document.createElement("a");
@@ -449,7 +500,7 @@
 		websocket.close();
    }
 </script>
-<div id="chartmain" style="width:10000px; height: 400px;"></div>
+<div id="chartmain" style="width:2500px; height: 400px;"></div>
 <div id="output"></div>
 
 <div name="myform" style="width:100%;height:200px;">

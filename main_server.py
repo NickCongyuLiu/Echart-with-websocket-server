@@ -52,12 +52,14 @@ class ChatHandler(WebSocketHandler):
     #websocket接受信息
     def on_message(self, message):
 
+        print(message)
 
         ##展示文件
         if(message[0:12]=='ask for fold'):
             file_list_mess =[]
             # print(message[13:])
             self.file_list=[]
+            self.file_count=0
             self.rootdir = os.getcwd()+'/analysis_recent_result/'+message[13:]
             fileList = os.listdir(self.rootdir)
             for i in range(0,len(fileList)):
